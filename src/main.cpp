@@ -132,7 +132,9 @@ void loop()
     // delay(2000);
     // setMotor(0, 0);
     // delay(2000);
+
     readSensor();
+    
     if (currentEncL>226){
         Serial.println("left wheel made 1 round");
         reset_encL();
