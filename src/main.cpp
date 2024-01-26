@@ -18,12 +18,16 @@
 
 #define SENSOR_COUNT 8
 #define WHITE_LINE 1
-#define BLACK_LINE 0 
-const byte posSensor[SENSOR_COUNT] = {15,23, 22, 21, 19, 18, 5,14};
+#define BLACK_LINE 0
+const byte posSensor[SENSOR_COUNT] = {15, 23, 22, 21, 19, 18, 5, 14};
 
-byte lineColor = BLACK_LINE; 
+bool s[8] = {0};
+
+byte lineColor = BLACK_LINE;
 
 void setMotor(int LL, int RR);
+void printCapteur();
+void PID();
 int readSensor();
 // Variables to store encoder ticks
 volatile unsigned int encR_ticks = 0;
@@ -83,7 +87,7 @@ void setupEncoders()
 
 void setupLEDC()
 {
- 
+
     // pinMode(hbridgeA,OUTPUT); pinMode(hbridgeB,OUTPUT);
     // pinMode(encoderPinA,INPUT);pinMode(encoderPinB,INPUT);
     pinMode(PIN_FWD_MOTOR_L, OUTPUT);
@@ -102,9 +106,7 @@ void setupLEDC()
     ledcSetup(PWM_BWD_MOTOR_R, PWM_Freq, PWM_Res);
     ledcAttachPin(PIN_BWD_MOTOR_R, PWM_BWD_MOTOR_R);
 
-    
     setMotor(0, 0);
-
 }
 // Setup function to initialize encoders
 void setup()
@@ -123,27 +125,35 @@ void loop()
 {
     unsigned int currentEncL = get_encL();
     unsigned int currentEncR = get_encR();
+    int dataSensor = readSensor();
+    PID();
+    // test capteurs
+    // printCapteur();
+    // delay(500);
 
-    // setMotor(120, 0);
-    // delay(2000);
-    // setMotor(120, 120);
-    // delay(2000);
-    // setMotor(0, 120);
-    // delay(2000);
-    // setMotor(0, 0);
-    // delay(2000);
+    // test Moteurs
+    //  setMotor(120, 0);
+    //  delay(2000);
+    //  setMotor(120, 120);
+    //  delay(2000);
+    //  setMotor(-120, 120);
+    //  delay(2000);
+    //  setMotor(0, 0);
+    //  delay(2000);
 
-    readSensor();
-    
-    if (currentEncL>226){
-        Serial.println("left wheel made 1 round");
-        reset_encL();
-    }
-    if (currentEncR>226){
-        Serial.println("right wheel made 1 round");
-        reset_encR();
-    }
-    // Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
+    // test Encodeur
+    //  if (currentEncL > 226)
+    //  {
+    //      Serial.println("left wheel made 1 round");
+    //      reset_encL();
+    //  }
+    //  if (currentEncR > 226)
+    //  {
+    //      Serial.println("right wheel made 1 round");
+    //      reset_encR();
+    //  }
+    //  Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
+
 }
 
 void setMotor(int LL, int RR)
@@ -174,34 +184,79 @@ void setMotor(int LL, int RR)
     }
 }
 
-
 int readSensor()
 {
     int dataSensorBit = 0b00000000;
+    memset(&s, 0, sizeof(s)); //  s[8]= {0};
 
     for (int x = 0; x < SENSOR_COUNT; x++)
     {
         if (digitalRead(posSensor[x]))
         {
             dataSensorBit = dataSensorBit + (0b10000000 >> x);
-            Serial.print("1") ;
-        }
-        else{
-            Serial.print("0") ;
-
+            s[x] = 1;
         }
     }
-    Serial.println() ;
-    
-    int bufBitSensor = 0b11111111;
+
     if (lineColor == WHITE_LINE)
     {
-        bufBitSensor = 0b11111111 - dataSensorBit;
+        for (int i = 0; i < SENSOR_COUNT; i++)
+            s[i] = !s[i];
+        return 0b11111111 - dataSensorBit;
     }
-    else
+    return dataSensorBit;
+}
+
+void printCapteur()
+{
+    for (int i = 0; i < SENSOR_COUNT; i++)
     {
-        bufBitSensor = dataSensorBit;
-    };
-    
-    return bufBitSensor;
+        Serial.print(s[i]);
+    }
+    Serial.println();
+}
+
+int values[8] = {-100, -50, -25, -10, 10, 25, 50, 100};
+
+float kp = 1.4;
+float ki = 0.05;
+float kd = 0.3;
+
+int P, D;
+int I = 0;
+
+int lasterror = 0;
+int basespeedm1 = 120;
+int maxspeedm1 = 180;
+int minspeedm1 = -50;
+
+int basespeedm2 = 120;
+int maxspeedm2 = 180;
+int minspeedm2 =-50;
+void PID()
+{
+    int currenttime = millis();
+    int somme = 0;
+    int error = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        error += s[i] * values[i];
+        somme += s[i];
+    }
+
+    P = error;
+
+    D = error - lasterror;
+    lasterror = error;
+
+    int motorspeed = P * kp + D * kd;
+
+    int speedm1 = basespeedm1 - motorspeed;
+    int speedm2 = basespeedm2 + motorspeed;
+
+    speedm1=constrain(speedm1,minspeedm1,maxspeedm1);
+    speedm2=constrain(speedm2,minspeedm2,maxspeedm2);
+    setMotor(speedm2,speedm1);
+
 }
