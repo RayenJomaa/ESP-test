@@ -117,16 +117,49 @@ void setup()
 }
 
 // Loop function (empty in this case)
+unsigned int lastTime = millis();
 unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
-int i = 0;
+
+int n = -1;
 
 void loop()
 {
+    unsigned int currentTime = millis();
     unsigned int currentEncL = get_encL();
     unsigned int currentEncR = get_encR();
     int dataSensor = readSensor();
-    PID();
+
+
+    if (n ==-1){
+        setMotor(120,120);
+        if (currentTime - lastTime > 200) {
+            
+            n++;
+        }
+    }
+    if (n == 0)
+    {
+
+        if (s[0]&&s[1]&&s[2]&&s[3]){
+           setMotor(0,0);
+           n=100;   
+        }
+        else {
+            PID();
+        }
+    }
+
+    if (n==100) {
+        
+        reset_encL();
+        reset_encR();
+        n++;
+    }
+    if (n==101){
+        Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
+    }
+
     // test capteurs
     // printCapteur();
     // delay(500);
@@ -153,7 +186,6 @@ void loop()
     //      reset_encR();
     //  }
     //  Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
-
 }
 
 void setMotor(int LL, int RR)
@@ -232,7 +264,7 @@ int minspeedm1 = -50;
 
 int basespeedm2 = 120;
 int maxspeedm2 = 180;
-int minspeedm2 =-50;
+int minspeedm2 = -50;
 void PID()
 {
     int currenttime = millis();
@@ -255,8 +287,7 @@ void PID()
     int speedm1 = basespeedm1 - motorspeed;
     int speedm2 = basespeedm2 + motorspeed;
 
-    speedm1=constrain(speedm1,minspeedm1,maxspeedm1);
-    speedm2=constrain(speedm2,minspeedm2,maxspeedm2);
-    setMotor(speedm2,speedm1);
-
+    speedm1 = constrain(speedm1, minspeedm1, maxspeedm1);
+    speedm2 = constrain(speedm2, minspeedm2, maxspeedm2);
+    setMotor(speedm2, speedm1);
 }
