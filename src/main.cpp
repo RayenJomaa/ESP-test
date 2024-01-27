@@ -145,7 +145,6 @@ void loop()
 
         if (s[0] && s[1] && s[2] && s[3])
         {
-            setMotor(0, 0);
             n++;
         }
         else
@@ -153,54 +152,75 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 1){
+    else if (n == 1)
+    {
         // Left Encoder: 151 Right Encoder: 190
-        lastEncL = get_encL();
-        lastEncR = get_encR();
-        setMotor(-120,120);
-        n++;
-    }
-    else if (n == 2){
-        if ( (currentEncL - lastEncL < 100) || (currentEncR - lastEncR < 100)  ){
-            setMotor(-120,120);
-        }
-        else {
-            n++;
-            lastTime = millis();
-        }
-    }
-    else if (n==3){
-        if ((s[7]||s[6]) &&  (currentTime-lastTime > 500) ){
-            n++;
-        }
-        else {
-            PID_1();
-        }
-    }
-    else if (n==4){
-        // Left Encoder: 885 Right Encoder: 925
+        // lastEncL = get_encL();
+        // lastEncR = get_encR();
         reset_encL();
         reset_encR();
-        setMotor(120,120);
         n++;
     }
-    else if (n==5){
-        // Left Encoder: 885 Right Encoder: 925
-        if ( (currentEncL < 885) || (currentEncR  < 925)  ){
-            PID_1();
+    else if (n == 2)
+    {
+        if ((currentEncR > 200))
+        {
+            n++;
+            lastTime = millis();
+            reset_encL();
+            reset_encR();
         }
-        else {
-            n=1000;
+        else
+        {
+            setMotor(-70, 120);
+        }
+    }
+    else if (n == 3)
+    {
+        if (1 && (currentEncL > 80 && currentEncR > 80))
+        {
+            // setMotor(-30,-30);
+            // delay(50);
+            // Left Encoder: 885 Right Encoder: 925
+            reset_encL();
+            reset_encR();
+            setMotor(120, 120);
+            n++;
+        
+
+        }
+        else
+        {
+            PID_1();
         }
     }
 
-
-    
-    
-    if (n == 100 )
+    else if (n == 4)
     {
+        // Left Encoder: 885 Right Encoder: 925
+        if ((currentEncL > 885) && (currentEncR > 925))
+        {
+            n = 1000;
+           
+        }
+        else
+        {
+            s[0] = 0;
+            s[1] = 0;
+            s[2] = 0;
+            s[5] = 0;
+            s[6] = 0;
+            s[7] = 0;
+            PID_1();
+        }
+    }
+
+    if (n == 100)
+    {
+        setMotor(-30, -30);
+        delay(50);
         lastTime = millis();
-        while ((encL_ticks || encR_ticks ))
+        while ((encL_ticks || encR_ticks))
         {
             reset_encL();
             reset_encR();
@@ -213,8 +233,9 @@ void loop()
     {
         Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
     }
-    if (n==1000){
-        setMotor(0,0);
+    if (n == 1000)
+    {
+        setMotor(0, 0);
         n++;
     }
     // test pid
@@ -355,4 +376,3 @@ void PID_1()
     speedm2 = constrain(speedm2, minspeedm2, maxspeedm2);
     setMotor(speedm2, speedm1);
 }
-
