@@ -186,8 +186,6 @@ void loop()
             reset_encR();
             setMotor(120, 120);
             n++;
-        
-
         }
         else
         {
@@ -198,19 +196,34 @@ void loop()
     else if (n == 4)
     {
         // Left Encoder: 885 Right Encoder: 925
-        if ((currentEncL > 885) && (currentEncR > 925))
+        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4))
         {
-            n = 1000;
-           
+            reset_encL();
+            reset_encR();
+            n++;
         }
         else
         {
-            s[0] = 0;
-            s[1] = 0;
-            s[2] = 0;
+
             s[5] = 0;
             s[6] = 0;
             s[7] = 0;
+            PID_1();
+        }
+    }
+    else if (n == 5)
+    {
+        // Left Encoder: 885 Right Encoder: 925
+        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4))
+        {
+            n = 1000;
+        }
+        else
+        {
+
+            s[0] = 0;
+            s[1] = 0;
+            s[2] = 0;
             PID_1();
         }
     }
