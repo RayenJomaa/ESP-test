@@ -27,7 +27,8 @@ byte lineColor = BLACK_LINE;
 
 void setMotor(int LL, int RR);
 void printCapteur();
-void PID();
+void PID_1();
+
 int readSensor();
 // Variables to store encoder ticks
 volatile unsigned int encR_ticks = 0;
@@ -130,36 +131,94 @@ void loop()
     unsigned int currentEncR = get_encR();
     int dataSensor = readSensor();
 
+    if (n == -1)
+    {
+        setMotor(120, 120);
+        if (currentTime - lastTime > 200)
+        {
 
-    if (n ==-1){
-        setMotor(120,120);
-        if (currentTime - lastTime > 200) {
-            
             n++;
         }
     }
-    if (n == 0)
+    else if (n == 0)
     {
 
-        if (s[0]&&s[1]&&s[2]&&s[3]){
-           setMotor(0,0);
-           n=100;   
+        if (s[0] && s[1] && s[2] && s[3])
+        {
+            setMotor(0, 0);
+            n++;
         }
-        else {
-            PID();
+        else
+        {
+            PID_1();
         }
     }
-
-    if (n==100) {
-        
-        reset_encL();
-        reset_encR();
+    else if (n == 1){
+        // Left Encoder: 151 Right Encoder: 190
+        lastEncL = get_encL();
+        lastEncR = get_encR();
+        setMotor(-120,120);
         n++;
     }
-    if (n==101){
-        Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
+    else if (n == 2){
+        if ( (currentEncL - lastEncL < 100) || (currentEncR - lastEncR < 100)  ){
+            setMotor(-120,120);
+        }
+        else {
+            n++;
+            lastTime = millis();
+        }
+    }
+    else if (n==3){
+        if ((s[7]||s[6]) &&  (currentTime-lastTime > 500) ){
+            n++;
+        }
+        else {
+            PID_1();
+        }
+    }
+    else if (n==4){
+        // Left Encoder: 885 Right Encoder: 925
+        reset_encL();
+        reset_encR();
+        setMotor(120,120);
+        n++;
+    }
+    else if (n==5){
+        // Left Encoder: 885 Right Encoder: 925
+        if ( (currentEncL < 885) || (currentEncR  < 925)  ){
+            PID_1();
+        }
+        else {
+            n=1000;
+        }
     }
 
+
+    
+    
+    if (n == 100 )
+    {
+        lastTime = millis();
+        while ((encL_ticks || encR_ticks ))
+        {
+            reset_encL();
+            reset_encR();
+            delay(500);
+        }
+
+        n++;
+    }
+    if (n == 101)
+    {
+        Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
+    }
+    if (n==1000){
+        setMotor(0,0);
+        n++;
+    }
+    // test pid
+    // PID_1();
     // test capteurs
     // printCapteur();
     // delay(500);
@@ -252,11 +311,12 @@ int values[8] = {-100, -50, -25, -10, 10, 25, 50, 100};
 
 float kp = 1.4;
 float ki = 0.05;
-float kd = 0.3;
+float kd = 0.05;
 
 int P, D;
 int I = 0;
 
+int lastProcess = 0;
 int lasterror = 0;
 int basespeedm1 = 120;
 int maxspeedm1 = 180;
@@ -265,9 +325,10 @@ int minspeedm1 = -50;
 int basespeedm2 = 120;
 int maxspeedm2 = 180;
 int minspeedm2 = -50;
-void PID()
+void PID_1()
 {
     int currenttime = millis();
+    double deltaTime = (micros() - lastProcess) / 1000000.0;
     int somme = 0;
     int error = 0;
 
@@ -279,8 +340,11 @@ void PID()
 
     P = error;
 
-    D = error - lasterror;
+    // D = error - lasterror;
+
+    D = (error - lasterror) * (double)kd / deltaTime;
     lasterror = error;
+    lastProcess = micros();
 
     int motorspeed = P * kp + D * kd;
 
@@ -291,3 +355,4 @@ void PID()
     speedm2 = constrain(speedm2, minspeedm2, maxspeedm2);
     setMotor(speedm2, speedm1);
 }
+
