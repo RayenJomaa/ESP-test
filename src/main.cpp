@@ -19,6 +19,15 @@
 #define SENSOR_COUNT 8
 #define WHITE_LINE 1
 #define BLACK_LINE 0
+
+int basespeedm1 = 120;
+int maxspeedm1 = 180;
+int minspeedm1 = -50;
+
+int basespeedm2 = 120;
+int maxspeedm2 = 180;
+int minspeedm2 = -50;
+
 const byte posSensor[SENSOR_COUNT] = {15, 23, 22, 21, 19, 18, 5, 14};
 
 bool s[8] = {0};
@@ -123,6 +132,7 @@ unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
 
 int n = -1;
+// int n = 12;
 
 void loop()
 {
@@ -177,7 +187,7 @@ void loop()
     }
     else if (n == 3)
     {
-        if (1 && (currentEncL > 80 && currentEncR > 80))
+        if ((s[7] || s[6]) && (currentEncL > 80 && currentEncR > 80))
         {
             // setMotor(-30,-30);
             // delay(50);
@@ -196,7 +206,7 @@ void loop()
     else if (n == 4)
     {
         // Left Encoder: 885 Right Encoder: 925
-        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4))
+        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4) && (s[0] || s[1]))
         {
             reset_encL();
             reset_encR();
@@ -214,9 +224,9 @@ void loop()
     else if (n == 5)
     {
         // Left Encoder: 885 Right Encoder: 925
-        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4))
+        if ((currentEncL > 226 * 0.65) && (currentEncR > 226 * 0.65)) // kammelna ezzouz khtout l verticaux
         {
-            n = 1000;
+            n++;
         }
         else
         {
@@ -228,10 +238,241 @@ void loop()
         }
     }
 
+    else if (n == 6)
+    {
+
+        if (s[4] && s[5] && s[6] && s[7]) // wsol l khat l horizental loul
+        {
+
+            reset_encL();
+            reset_encR();
+            while ((get_encR() < 56) && (get_encL() < 56))
+            {
+                setMotor(120, 120);
+            }
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 7)
+    {
+
+        if (s[0] && (s[1] && s[2] && s[3])) // wsol l khat l horizental etheni
+        {
+
+            reset_encL();
+            reset_encR();
+            while ((get_encR() < 56) && (get_encL() < 56))
+            {
+                setMotor(120, 120);
+            }
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 8)
+    {
+
+        if (s[4] && s[5] && s[6] && s[7])
+        {
+            reset_encR();
+            reset_encL();
+            while ((get_encL() < 255))
+            {
+                setMotor(120, -70);
+            }
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 9)
+    {
+        if ((s[0] && s[7]) && (currentTime - lastTime > 500))
+        {
+            lineColor = WHITE_LINE;
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 10)
+    {
+        if ((s[0] && s[7]) && (currentTime - lastTime > 500))
+        {
+            setMotor(-30, -30);
+            // delay(500);
+            reset_encL();
+            reset_encR();
+            while ((get_encR() < 56) && (get_encL() < 56))
+            {
+                setMotor(120, 120);
+            }
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 11)
+    {
+        if ((s[0] && s[7]) && (currentTime - lastTime > 500))
+        {
+            lineColor = BLACK_LINE;
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 12)
+    {
+        if (s[4] && s[5] && s[6] && s[7])
+        {
+            reset_encR();
+            reset_encL();
+            while ((get_encL() < 255))
+            {
+                setMotor(120, -70);
+            }
+            n++;
+            lastTime = millis();
+            reset_encL();
+            reset_encR();
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+    else if (n == 13)
+    {
+        // Left Encoder: 221 Right Encoder: 364
+        //  zigzag part 1 and 2
+        if ((s[7]) && (currentEncL > 56) && (currentEncR > 56))
+        {
+            reset_encL();
+            while (get_encL() < 280)
+            {
+                setMotor(120, -30);
+            }
+            reset_encR();
+            while (get_encR() < 340)
+            {
+                setMotor(-30, 120);
+            }
+            n++;
+        }
+        else
+            PID_1();
+    }
+    else if (n == 14)
+    {
+        // zigzag part 3
+        if ((s[7]) && (currentEncL > 100) && (currentEncR > 100))
+        {
+            reset_encL();
+            while (get_encL() < 300)
+            {
+                setMotor(120, -30);
+            }
+            n++;
+            reset_encL();
+            reset_encR();
+        }
+        else
+            PID_1();
+    }
+    else if (n == 15)
+    {
+        if (s[0] && (get_encL() > 50) && (get_encR() > 50))
+        {
+            reset_encR();
+            while (get_encR() < 300)
+            {
+                setMotor(-30, 120);
+            }
+            n++;
+            reset_encL();
+            reset_encR();
+        }
+        else
+            PID_1();
+    }
+    else if (n == 16)
+    {
+        if (s[6] && (get_encL() > 50) && (get_encR() > 50))
+        {
+            n++;
+            reset_encL();
+            reset_encR();
+        }
+        else
+            PID_1();
+    }
+    else if (n == 17)
+    {
+        if ((!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
+        {
+            // Left Encoder: 214 Right Encoder: 200
+            //  setMotor(-30, -30);
+            //  delay(50);
+            reset_encL();
+            reset_encR();
+            while ((get_encR() < 200 * 1.6) && (get_encL() < 200 * 1.6))
+            {
+                setMotor(120, -120);
+            }
+            n++;
+            reset_encR();
+            reset_encL();
+        }
+        else
+        {
+            s[7] = 0;
+            s[6] = 0;
+            s[5] = 0;
+            PID_1();
+        }
+    }
+    else if (n == 18)
+    {
+
+        if (s[4] && s[5] && s[6] && s[7] && (currentEncL > 100 && currentEncR > 100))
+        {
+            reset_encR();
+            reset_encL();
+            while ((get_encL() < 255))
+            {
+                setMotor(120, -70);
+            }
+            n = 100;
+        }
+        else
+        {
+            PID_1();
+        }
+    }
+
+    /*------------------------------------------------*/
+
     if (n == 100)
     {
         setMotor(-30, -30);
         delay(50);
+        setMotor(0, 0);
         lastTime = millis();
         while ((encL_ticks || encR_ticks))
         {
@@ -242,6 +483,7 @@ void loop()
 
         n++;
     }
+
     if (n == 101)
     {
         Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
@@ -352,13 +594,7 @@ int I = 0;
 
 int lastProcess = 0;
 int lasterror = 0;
-int basespeedm1 = 120;
-int maxspeedm1 = 180;
-int minspeedm1 = -50;
 
-int basespeedm2 = 120;
-int maxspeedm2 = 180;
-int minspeedm2 = -50;
 void PID_1()
 {
     int currenttime = millis();
