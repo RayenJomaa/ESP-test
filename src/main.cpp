@@ -407,7 +407,7 @@ void loop()
             // Left Encoder: 218 Right Encoder: 304
             // debut angle aigu zigzag 1
             reset_encoders();
-            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
                 readSensor();
@@ -428,7 +428,7 @@ void loop()
             // Left Encoder: 218 Right Encoder: 304
             // debut angle aigu zigzag 2
             reset_encoders();
-            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while ( get_encL()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(120, -100);
                 readSensor();
@@ -453,7 +453,7 @@ void loop()
                 setMotor(80,80);
             }
             reset_encoders();
-            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
                 readSensor();
@@ -498,6 +498,8 @@ void loop()
             reset_encR();
             reset_encL();
             lastTime = millis();
+            // fin angle aigu zigzag 4 (final)
+
         }
         else
         {
