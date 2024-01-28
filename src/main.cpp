@@ -384,7 +384,7 @@ void loop()
             // Left Encoder: 218 Right Encoder: 304
             reset_encR();
             reset_encL();
-            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
                 dataSensor = readSensor();
@@ -405,7 +405,7 @@ void loop()
             // Left Encoder: 218 Right Encoder: 304
             reset_encR();
             reset_encL();
-            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while (get_encL()<100|| !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(120,-100);
                 dataSensor = readSensor();
@@ -497,18 +497,53 @@ void loop()
             {
                 setMotor(120, -30);
             }
+            /*--------------------------------*/
             reset_encR();
             reset_encL();
             while ((get_encR() < 616-130))
             {
                 setMotor(-30, 120);
             }
-            setMotor(0,0);
+            /*--------------------------------*/
+            reset_encR();
+            reset_encL();
+            while ((get_encR() < 226-95) ||(get_encL() < 226-95))
+            {
+                setMotor(80, 80);
+            }
+            /*--------------------------------*/
+            reset_encR();
+            reset_encL();
+            while ((get_encL() < 576-56))
+            {
+                setMotor(120, -25);
+            }
+            setMotor(-30,-30);
+            delay(2000);
+            /*--------------------------------*/
+            reset_encR();
+            reset_encL();
+            while ((get_encL() < 150)||(get_encR() < 150))
+            {
+                setMotor(80, 80);
+            }
+            setMotor(-30,-30);
+            delay(500);
+            /*--------------------------------*/
+            reset_encR();
+            reset_encL();
+            while ((get_encR() < 616-130))
+            {
+                setMotor(-30, 120);
+            }
+            reset_encR();
+            reset_encL();
+            setMotor(-30,-30);
             n=100;
         }
         else
         {
-            if (currentTime-lastTime <800){
+            if (currentTime-lastTime <200){
 
             s[7] = 0;
             s[6] = 0;
@@ -517,7 +552,14 @@ void loop()
             PID_1();
         }
     }
-    else if (n==20){}
+    else if (n==20){
+        if ( (currentEncL>750) ){
+            setMotor(0,0);
+            n=100;
+        }else {
+            PID_1();
+        }
+    }
 
     /*------------------------------------------------*/
     /*------------------------------------------------*/
