@@ -12,8 +12,8 @@
 #define PIN_BWD_MOTOR_R 25
 #define PIN_encR_A 35
 
-#define PIN_FWD_MOTOR_L 32
-#define PIN_BWD_MOTOR_L 33
+#define PIN_FWD_MOTOR_L 33
+#define PIN_BWD_MOTOR_L 32
 #define PIN_encL_A 39
 
 #define SENSOR_COUNT 8
@@ -31,12 +31,13 @@ int minspeedm2 = -50;
 const byte posSensor[SENSOR_COUNT] = {15, 23, 22, 21, 19, 18, 5, 14};
 
 bool s[8] = {0};
-
+int dataSensor = 0b00000000;
 byte lineColor = BLACK_LINE;
 
 void setMotor(int LL, int RR);
-void printCapteur();
+void printCapteur(int cnt, float somme);
 void PID_1();
+void PID_2();
 
 int readSensor();
 // Variables to store encoder ticks
@@ -125,6 +126,8 @@ void setup()
     setupEncoders();
     setupLEDC();
 }
+int cnt = 0;
+float somme = 0;
 
 // Loop function (empty in this case)
 unsigned int lastTime = millis();
@@ -139,22 +142,24 @@ void loop()
     unsigned int currentTime = millis();
     unsigned int currentEncL = get_encL();
     unsigned int currentEncR = get_encR();
-    int dataSensor = readSensor();
+    dataSensor = readSensor();
 
     if (n == -1)
     {
         setMotor(120, 120);
-        if (currentTime - lastTime > 200)
+        if ((dataSensor != 0b00000000) && (currentTime - lastTime > 200))
         {
-
             n++;
+            lastTime = millis();
         }
     }
     else if (n == 0)
     {
-
-        if (s[0] && s[1] && s[2] && s[3])
+        // if (s[0] && s[1] && s[2] && s[3])
+        if ((somme <= 2.5 && cnt >= 4) && (currentTime - lastTime > 200))
         {
+            reset_encL();
+            reset_encR();
             n++;
         }
         else
@@ -162,36 +167,31 @@ void loop()
             PID_1();
         }
     }
+
     else if (n == 1)
     {
         // Left Encoder: 151 Right Encoder: 190
-        // lastEncL = get_encL();
-        // lastEncR = get_encR();
-        reset_encL();
-        reset_encR();
-        n++;
-    }
-    else if (n == 2)
-    {
-        if ((currentEncR > 200))
+        if ((currentEncR > 200) && (cnt >= 2 && abs(somme - 3.5) <= 3))
         {
+            // setMotor(0,0);
+            // delay(2000);
             n++;
             lastTime = millis();
             reset_encL();
             reset_encR();
         }
         else
-        {
-            setMotor(-70, 120);
+        {   
+            setMotor(-80, 120);
         }
     }
-    else if (n == 3)
+    else if (n == 2)
     {
         if ((s[7] || s[6]) && (currentEncL > 80 && currentEncR > 80))
         {
+            // Left Encoder: 885 Right Encoder: 925
             // setMotor(-30,-30);
             // delay(50);
-            // Left Encoder: 885 Right Encoder: 925
             reset_encL();
             reset_encR();
             setMotor(120, 120);
@@ -203,7 +203,7 @@ void loop()
         }
     }
 
-    else if (n == 4)
+    else if (n == 3)
     {
         // Left Encoder: 885 Right Encoder: 925
         if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4) && (s[0] || s[1]))
@@ -221,7 +221,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 5)
+    else if (n == 4)
     {
         // Left Encoder: 885 Right Encoder: 925
         if ((currentEncL > 226 * 0.65) && (currentEncR > 226 * 0.65)) // kammelna ezzouz khtout l verticaux
@@ -238,7 +238,7 @@ void loop()
         }
     }
 
-    else if (n == 6)
+    else if (n == 5)
     {
 
         if (s[4] && s[5] && s[6] && s[7]) // wsol l khat l horizental loul
@@ -246,9 +246,10 @@ void loop()
 
             reset_encL();
             reset_encR();
-            while ((get_encR() < 56) && (get_encL() < 56))
+            while ((get_encR() < 56) && (get_encL() < 56) )
             {
                 setMotor(120, 120);
+                dataSensor = readSensor();
             }
             n++;
         }
@@ -257,7 +258,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 7)
+    else if (n == 6)
     {
 
         if (s[0] && (s[1] && s[2] && s[3])) // wsol l khat l horizental etheni
@@ -276,16 +277,17 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 8)
+    else if (n == 7)
     {
 
         if (s[4] && s[5] && s[6] && s[7])
         {
             reset_encR();
             reset_encL();
-            while ((get_encL() < 255))
+            while ((get_encL() < 255) || !( cnt>=2 &&abs(somme - 3.5) <= 3))
             {
                 setMotor(120, -70);
+                dataSensor = readSensor();
             }
             n++;
         }
@@ -294,7 +296,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 9)
+    else if (n == 8)
     {
         if ((s[0] && s[7]) && (currentTime - lastTime > 500))
         {
@@ -306,12 +308,12 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 10)
+    else if (n == 9)
     {
         if ((s[0] && s[7]) && (currentTime - lastTime > 500))
         {
             setMotor(-30, -30);
-            // delay(500);
+            delay(500);
             reset_encL();
             reset_encR();
             while ((get_encR() < 56) && (get_encL() < 56))
@@ -325,7 +327,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 11)
+    else if (n == 10)
     {
         if ((s[0] && s[7]) && (currentTime - lastTime > 500))
         {
@@ -337,7 +339,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 12)
+    else if (n == 11)
     {
         if (s[4] && s[5] && s[6] && s[7])
         {
@@ -357,10 +359,10 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 13)
+    else if (n == 12)
     {
         // Left Encoder: 221 Right Encoder: 364
-        //  zigzag part 1 and 2
+        //  d5alna le zigzag
         if ((s[7]) && (currentEncL > 56) && (currentEncR > 56))
         {
             reset_encL();
@@ -368,50 +370,84 @@ void loop()
             {
                 setMotor(120, -30);
             }
-            reset_encR();
-            while (get_encR() < 340)
-            {
-                setMotor(-30, 120);
-            }
             n++;
+            reset_encR();
+            reset_encL();
         }
         else
             PID_1();
+    }
+    else if (n == 13)
+    {   //zigzag 1
+        if ((cnt == 0))
+        {
+            // Left Encoder: 218 Right Encoder: 304
+            reset_encR();
+            reset_encL();
+            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            {
+                setMotor(-100, 120);
+                dataSensor = readSensor();
+            }
+            reset_encR();
+            reset_encL();
+            n++;
+        }
+        else
+        {
+            PID_1();
+        }
     }
     else if (n == 14)
-    {
-        // zigzag part 3
-        if ((s[7]) && (currentEncL > 100) && (currentEncR > 100))
+    {   //zigzag2
+        if ((cnt == 0))
         {
-            reset_encL();
-            while (get_encL() < 300)
-            {
-                setMotor(120, -30);
-            }
-            n++;
-            reset_encL();
+            // Left Encoder: 218 Right Encoder: 304
             reset_encR();
+            reset_encL();
+            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            {
+                setMotor(120,-100);
+                dataSensor = readSensor();
+            }
+            reset_encR();
+            reset_encL();
+            n++;
         }
         else
+        {
             PID_1();
+        }
     }
-    else if (n == 15)
-    {
-        if (s[0] && (get_encL() > 50) && (get_encR() > 50))
-        {
-            reset_encR();
-            while (get_encR() < 300)
-            {
-                setMotor(-30, 120);
-            }
+    else if (n == 15){
+        if ((s[0]) && (currentEncL > 56) && (currentEncR > 56)){
             n++;
-            reset_encL();
-            reset_encR();
-        }
-        else
+        }else {
             PID_1();
+        }
     }
     else if (n == 16)
+    {   //zigzag3
+        if ((cnt == 0))
+        {   
+            // Left Encoder: 218 Right Encoder: 304
+            reset_encR();
+            reset_encL();
+            while (!(cnt >= 2 && abs(somme - 3.5) <= 3))
+            {
+                setMotor(-100, 120);
+                dataSensor = readSensor();
+            }
+            reset_encR();
+            reset_encL();
+            n++;
+        }
+        else
+        {
+            setMotor(80,80);
+        }
+    }
+    else if (n == 17)
     {
         if (s[6] && (get_encL() > 50) && (get_encR() > 50))
         {
@@ -422,7 +458,7 @@ void loop()
         else
             PID_1();
     }
-    else if (n == 17)
+    else if (n == 18)
     {
         if ((!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
         {
@@ -438,6 +474,7 @@ void loop()
             n++;
             reset_encR();
             reset_encL();
+            lastTime = millis();
         }
         else
         {
@@ -447,7 +484,7 @@ void loop()
             PID_1();
         }
     }
-    else if (n == 18)
+    else if (n == 19)
     {
 
         if (s[4] && s[5] && s[6] && s[7] && (currentEncL > 100 && currentEncR > 100))
@@ -462,10 +499,18 @@ void loop()
         }
         else
         {
+            if (currentTime-lastTime <800){
+
+            s[7] = 0;
+            s[6] = 0;
+            s[5] = 0;
+            }
             PID_1();
         }
     }
 
+    /*------------------------------------------------*/
+    /*------------------------------------------------*/
     /*------------------------------------------------*/
 
     if (n == 100)
@@ -483,7 +528,6 @@ void loop()
 
         n++;
     }
-
     if (n == 101)
     {
         Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
@@ -493,34 +537,54 @@ void loop()
         setMotor(0, 0);
         n++;
     }
-    // test pid
-    // PID_1();
-    // test capteurs
-    // printCapteur();
-    // delay(500);
+    /*------------------------------------------------*/
+    /*------------------------------------------------*/
+    /*--------------------tests-----------------------*/
 
+    // test pid
+
+    if (n == 690)
+    {
+        PID_1();
+    }
+    // test capteurs
+    if (n == 691)
+    {
+        printCapteur(cnt, somme);
+        delay(500);
+    }
     // test Moteurs
-    //  setMotor(120, 0);
-    //  delay(2000);
-    //  setMotor(120, 120);
-    //  delay(2000);
-    //  setMotor(-120, 120);
-    //  delay(2000);
-    //  setMotor(0, 0);
-    //  delay(2000);
+    if (n == 692)
+    {
+        setMotor(120, 120);
+        delay(1000);
+        setMotor(0, 0);
+        delay(1000);
+        setMotor(-80, -80);
+        delay(1000);
+        setMotor(0, 0);
+        delay(2000);
+    }
 
     // test Encodeur
-    //  if (currentEncL > 226)
-    //  {
-    //      Serial.println("left wheel made 1 round");
-    //      reset_encL();
-    //  }
-    //  if (currentEncR > 226)
-    //  {
-    //      Serial.println("right wheel made 1 round");
-    //      reset_encR();
-    //  }
-    //  Serial.print("Left Encoder: "+String(currentEncL)+" Right Encoder: "+ String(currentEncR)+"\n");
+    if (n == 693)
+    {
+        if (currentEncL > 226)
+        {
+            Serial.println("left wheel made 1 round");
+            reset_encL();
+        }
+        if (currentEncR > 226)
+        {
+            Serial.println("right wheel made 1 round");
+            reset_encR();
+        }
+        Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
+    }
+    if (n == 694)
+    {
+        PID_2();
+    }
 }
 
 void setMotor(int LL, int RR)
@@ -569,25 +633,38 @@ int readSensor()
     {
         for (int i = 0; i < SENSOR_COUNT; i++)
             s[i] = !s[i];
-        return 0b11111111 - dataSensorBit;
+        dataSensorBit = 0b11111111 - dataSensorBit;
     }
+    cnt = 0;
+    somme = 0;
+    for (int i = 0; i < SENSOR_COUNT; i++)
+    {
+        if (s[i])
+        {
+            cnt++;
+            somme += i;
+        }
+    }
+    if (cnt)
+        somme = somme / cnt;
+
     return dataSensorBit;
 }
 
-void printCapteur()
+void printCapteur(int cnt, float somme)
 {
     for (int i = 0; i < SENSOR_COUNT; i++)
     {
         Serial.print(s[i]);
     }
-    Serial.println();
+    Serial.println(" // somme: " + String(somme) + " cnt: " + String(cnt));
 }
 
 int values[8] = {-100, -50, -25, -10, 10, 25, 50, 100};
 
-float kp = 1.4;
-float ki = 0.05;
-float kd = 0.05;
+float kp = 1.2;
+// float ki = 0.05;
+float kd = 0.2;
 
 int P, D;
 int I = 0;
@@ -597,17 +674,54 @@ int lasterror = 0;
 
 void PID_1()
 {
+
     int currenttime = millis();
     double deltaTime = (micros() - lastProcess) / 1000000.0;
-    int somme = 0;
     int error = 0;
 
     for (int i = 0; i < 8; i++)
     {
         error += s[i] * values[i];
-        somme += s[i];
     }
 
+    P = error;
+
+    // D = error - lasterror;
+
+    D = (error - lasterror) * (double)kd / deltaTime;
+    lasterror = error;
+    lastProcess = micros();
+
+    int motorspeed = P * kp + D * kd;
+
+    int speedm1 = basespeedm1 - motorspeed;
+    int speedm2 = basespeedm2 + motorspeed;
+
+    speedm1 = constrain(speedm1, minspeedm1, maxspeedm1);
+    speedm2 = constrain(speedm2, minspeedm2, maxspeedm2);
+    setMotor(speedm2, speedm1);
+}
+
+int lastOnLineError = 0;
+void PID_2()
+{
+
+    int currenttime = millis();
+    double deltaTime = (micros() - lastProcess) / 1000000.0;
+    int error = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        error += s[i] * values[i];
+    }
+    if (error == 0 && dataSensor == 0)
+    {
+        error = lastOnLineError * (-2);
+    }
+    else
+    {
+        lastOnLineError = error;
+    }
     P = error;
 
     // D = error - lasterror;
