@@ -134,8 +134,8 @@ unsigned int lastTime = millis();
 unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
 
-int n = -1;
-// int n = 12;
+// int n = -1;
+int n = 11;
 
 void loop()
 {
@@ -448,7 +448,7 @@ void loop()
         }
     }
     else if (n == 17)
-    {
+    {   //zigzag4 (final)
         if (s[6] && (get_encL() > 50) && (get_encR() > 50))
         {
             n++;
@@ -467,9 +467,11 @@ void loop()
             //  delay(50);
             reset_encL();
             reset_encR();
-            while ((get_encR() < 200 * 1.6) && (get_encL() < 200 * 1.6))
+            while ((get_encR() < 200 * 1.6) && (get_encL() < 200 * 1.6))//||!((abs(somme - 5) <= 2) && cnt >=2))
             {
                 setMotor(120, -120);
+                dataSensor = readSensor();
+            
             }
             n++;
             reset_encR();
@@ -485,17 +487,24 @@ void loop()
         }
     }
     else if (n == 19)
-    {
+    {     
 
         if (s[4] && s[5] && s[6] && s[7] && (currentEncL > 100 && currentEncR > 100))
         {
             reset_encR();
             reset_encL();
-            while ((get_encL() < 255))
+            while ((get_encL() < 292))
             {
-                setMotor(120, -70);
+                setMotor(120, -30);
             }
-            n = 100;
+            reset_encR();
+            reset_encL();
+            while ((get_encR() < 616-130))
+            {
+                setMotor(-30, 120);
+            }
+            setMotor(0,0);
+            n=100;
         }
         else
         {
@@ -508,6 +517,7 @@ void loop()
             PID_1();
         }
     }
+    else if (n==20){}
 
     /*------------------------------------------------*/
     /*------------------------------------------------*/
