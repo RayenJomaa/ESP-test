@@ -135,7 +135,7 @@ unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
 
 // int n = -1;
-int n = 11;
+int n = -1;
 
 void loop()
 {
