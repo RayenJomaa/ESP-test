@@ -457,6 +457,7 @@ void loop()
                 readSensor();
                 setMotor(80,80);
             }
+            
             reset_encoders();
             while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
