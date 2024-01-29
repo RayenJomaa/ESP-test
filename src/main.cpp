@@ -159,6 +159,7 @@ void setup()
     setupLEDC();
 }
 
+
 /*______________________________________LOOP___________________________________________________*/
 int n = -1;
 // int n = 690;
@@ -410,8 +411,11 @@ void loop()
         if ((cnt == 0))
         {
             // Left Encoder: 218 Right Encoder: 304
+
             // debut angle aigu zigzag 1
             reset_encoders();
+
+
             while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
@@ -431,9 +435,11 @@ void loop()
         if ((cnt == 0))
         {
             // Left Encoder: 218 Right Encoder: 304
+
             // debut angle aigu zigzag 2
             reset_encoders();
             while ( get_encL()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
+
             {
                 setMotor(120, -100);
                 readSensor();
@@ -526,12 +532,14 @@ void loop()
             {
                 setMotor(120, -30);
             }
+            /*--------------------------------*/
             reset_encR();
             reset_encL();
             while ((get_encR() < 616 - 130))
             {
                 setMotor(-30, 120);
             }
+
             setMotor(0, 0);
             n = 100;
         }
@@ -540,6 +548,7 @@ void loop()
             if (currentTime - lastTime < 200)
             {
 
+
                 s[7] = 0;
                 s[6] = 0;
                 s[5] = 0;
@@ -547,6 +556,7 @@ void loop()
             PID_1.Compute();
         }
     }
+
 
     /*__________________________________DEBUGGING_______________________________________________________*/
     if (n == 100)
