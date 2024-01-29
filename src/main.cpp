@@ -59,7 +59,7 @@ void printCapteur();
 /**
  * @brief detect line position and update s,datasensor,cnt,somme;
  * @note  takes into account the line color black/white using the global "lineColor" variable
-*/
+ */
 void readSensor();
 
 /*______________________________________PID CLASSES___________________________________________________*/
@@ -108,11 +108,86 @@ public:
         setMotor(speedm2, speedm1);
     }
 };
+class PID_2_cls
+{
+public:
+    unsigned int lastProcess = 0;
+    int error = 0;
+    int lastError = 0;
+    int lastOnLineError = 0;
+    int P, D;
+    int kp = 35;
+    int kd = 5;
+    int speed = 120;
+
+    int maxspeed = 140;
+    int minspeed = -120;
+
+    void Compute()
+    {
+        double deltaTime = (micros() - lastProcess) / 1000000.0;
+        lastProcess = micros();
+        // clang-format off
+        switch (dataSensor) {
+            case 0b00011000: error = 0;    break;
+
+            case 0b00110000: error = 1;    break;
+            case 0b00100000: error = 2;    break;
+            case 0b01100000: error = 3;    break;
+            case 0b01000000: error = 4;    break;
+            case 0b11000000: error = 5;    break;
+            case 0b10000000: error = 6;    break;
+
+            case 0b00001100: error = -1;   break;
+            case 0b00000100: error = -2;   break;
+            case 0b00000110: error = -3;   break;
+            case 0b00000010: error = -4;   break;
+            case 0b00000011: error = -5;   break;
+            case 0b00000001: error = -6;   break;
+        }
+        // clang-format on
+        // debugSerial->println("--> error: " + String(error));
+        // displaySensor(dataSensor);
+
+        // 0b101100; 0b100100; 0b101111
+        // if ((dataSensor & 0b100000) &&
+        //     (dataSensor & 0b001111))
+        // if ((dataSensor & 0b10000000) &&
+        //     (dataSensor & 0b00011111))
+        // {
+        //     error = lastOnLineError;
+        // }
+        if (dataSensor != 0b00000000)
+        {
+            lastOnLineError = error;
+        }
+        if (dataSensor == 0b00000000)
+        {
+            error = lastOnLineError ;
+        }
+        P = error * (double)kp;
+        D = (error - lastError) * (double)kd / deltaTime;
+
+        double rateError = error - lastError;
+        lastError = error;
+
+        double mv = P + D;
+        int moveVal = (int)(P + D);
+        int moveLeft = speed - moveVal;
+        int moveRight = speed + moveVal;
+
+        moveLeft = constrain(moveLeft, minspeed, maxspeed);
+        moveRight = constrain(moveRight, minspeed, maxspeed);
+
+        setMotor(moveLeft, moveRight);
+    }
+};
 /*______________________________________GLOBALs______________________________________________________*/
 unsigned int lastTime = millis();
 unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
 PID_1_cls PID_1;
+PID_2_cls PID_2;
 
 /*______________________________________SETUPs______________________________________________________*/
 // Setup function to configure pins and attach interrupts
@@ -159,8 +234,8 @@ void setup()
     setupLEDC();
 }
 
-
 /*______________________________________LOOP___________________________________________________*/
+// int n = -1;
 int n = -1;
 // int n = 690;
 void loop()
@@ -169,7 +244,7 @@ void loop()
     unsigned int currentEncL = get_encL();
     unsigned int currentEncR = get_encR();
     readSensor();
-    
+
     /*__________________________________MAQUETTE______________________________________________*/
 
     if (n == -1)
@@ -415,8 +490,7 @@ void loop()
             // debut angle aigu zigzag 1
             reset_encoders();
 
-
-            while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while (get_encR() < 100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
                 readSensor();
@@ -438,7 +512,7 @@ void loop()
 
             // debut angle aigu zigzag 2
             reset_encoders();
-            while ( get_encL()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while (get_encL() < 100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
 
             {
                 setMotor(120, -100);
@@ -455,37 +529,37 @@ void loop()
     }
     else if (n == 15)
     {
-        if ((s[0]) && (currentEncL > 56) && (currentEncR > 56))
+        if ((s[0]) && (currentEncL > 90) && (currentEncR > 90))
         {
             // debut angle aigu zigzag 3
             reset_encoders();
-            while ( cnt!=0 ){
+            while (cnt != 0)
+            {
                 readSensor();
-                setMotor(80,80);
+                setMotor(80, 80);
             }
-            
+
             reset_encoders();
-            while ( get_encR()<100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
+            while (get_encR() < 100 || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(-100, 120);
                 readSensor();
             }
             reset_encoders();
-            setMotor(0,0);
+            setMotor(0, 0);
             n++;
             // fin angle aigu zigzag 3
-
         }
         else
         {
-            PID_1.Compute();
+            PID_2.Compute();
         }
     }
-    
+
     else if (n == 16)
-    { 
+    {
         if (s[6] && (get_encL() > 50) && (get_encR() > 50))
-        {   
+        {
             // debut angle aigu zigzag 4 (final)
             reset_encoders();
             n++;
@@ -511,7 +585,6 @@ void loop()
             reset_encL();
             lastTime = millis();
             // fin angle aigu zigzag 4 (final)
-
         }
         else
         {
@@ -526,28 +599,31 @@ void loop()
 
         if (s[4] && s[5] && s[6] && s[7] && (currentEncL > 100 && currentEncR > 100))
         {
+            // debut tour droite entree sinuset
             reset_encR();
             reset_encL();
             while ((get_encL() < 292))
             {
                 setMotor(120, -30);
             }
-            /*--------------------------------*/
-            reset_encR();
-            reset_encL();
-            while ((get_encR() < 616 - 130))
-            {
-                setMotor(-30, 120);
-            }
+            // fin tour droite entree sinuset
 
-            setMotor(0, 0);
-            n = 100;
+            /*--------------------------------*/
+            // reset_encR();
+            // reset_encL();
+            // while ((get_encR() < 616 - 130))
+            // {
+            //     setMotor(-30, 120);
+            // }
+
+            // setMotor(0, 0);
+            reset_encoders();
+            n++;
         }
         else
         {
             if (currentTime - lastTime < 200)
             {
-
 
                 s[7] = 0;
                 s[6] = 0;
@@ -556,7 +632,17 @@ void loop()
             PID_1.Compute();
         }
     }
-
+    else if (n == 19)
+    {
+        if (currentEncL > 2000 && currentEncR > 2000)
+        {
+            n = 100;
+        }
+        else
+        {
+            PID_2.Compute();
+        }
+    }
 
     /*__________________________________DEBUGGING_______________________________________________________*/
     if (n == 100)
@@ -622,6 +708,11 @@ void loop()
         }
         Serial.print("Left Encoder: " + String(currentEncL) + " Right Encoder: " + String(currentEncR) + "\n");
     }
+    // test PID_2
+    if (n == 694)
+    {
+        PID_2.Compute();
+    }
     /*______________________________________________________________________________________________*/
 }
 
@@ -658,11 +749,11 @@ void readSensor()
             somme += i;
         }
     }
-    if (cnt){
+    if (cnt)
+    {
         somme = somme / cnt;
         onLine = 1;
     }
-    
 }
 
 void printCapteur()
