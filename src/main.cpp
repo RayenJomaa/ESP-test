@@ -56,6 +56,10 @@ class PID_1;
 
 void setMotor(int LL, int RR);
 void printCapteur();
+/**
+ * @brief detect line position and update s,datasensor,cnt,somme;
+ * @note  takes into account the line color black/white using the global "lineColor" variable
+*/
 void readSensor();
 
 /*______________________________________PID CLASSES___________________________________________________*/
@@ -164,6 +168,7 @@ void loop()
     unsigned int currentEncL = get_encL();
     unsigned int currentEncR = get_encR();
     readSensor();
+    
     /*__________________________________MAQUETTE______________________________________________*/
 
     if (n == -1)
@@ -610,10 +615,7 @@ void loop()
 }
 
 /*______________________________________FUNCTIONS___________________________________________________*/
-/**
- * @brief detect line position and update s,datasensor,cnt,somme;
-   @note  takes into account the line color black/white using the global "lineColor" variable
-*/
+
 void readSensor()
 {
     memset(&s, 0, sizeof(s)); //  s[8]= {0};
