@@ -532,7 +532,6 @@ void loop()
             {
                 setMotor(120, -30);
             }
-            /*--------------------------------*/
             reset_encR();
             reset_encL();
             while ((get_encR() < 616 - 130))
