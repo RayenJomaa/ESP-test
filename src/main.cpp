@@ -265,8 +265,8 @@ void setup()
 }
 
 /*______________________________________LOOP___________________________________________________*/
-// int n = -1;
-int n = 18;
+int n = -1;
+//int n = 18;
 // int n = 690;
 void loop()
 {
@@ -691,12 +691,12 @@ void loop()
     {
         if (cnt == 0)
         {
-
+            // REMINDER
             setMotor(-30, -30);
-            delay(500);
+            delay(200);
             // debut angle droit ymin (fin sinuset)
             reset_encoders();
-            while ((get_encL() < 100))
+            while ((get_encL() < 200))
             {
                 setMotor(90, -30);
                 readSensor();
@@ -705,8 +705,9 @@ void loop()
                     return;
                 }
             }
-            setMotor(-30, -30);
-            delay(500);
+            // REMINDER
+            // setMotor(-30, -30);
+            // delay(500);
             reset_encoders();
             while (cnt == 0)
             {
@@ -727,10 +728,10 @@ void loop()
     else if (n == 21)
     {
         if ((s[7] && (s[4] || s[3])) && (currentEncL + currentEncR > 350))
-        {   
+        {
             // dora imin (fin Y1)
             reset_encoders();
-            while ((get_encL() < 255) )
+            while ((get_encL() < 255))
             {
                 setMotor(120, 0);
                 readSensor();
@@ -739,7 +740,6 @@ void loop()
             reset_encoders();
             n++;
             // debut partie mestwiya (entre Y1 et Y2)
-
         }
         else
         {
@@ -748,8 +748,8 @@ void loop()
     }
     else if (n == 22)
     {
-        if ((s[2] && s[3] && s[4] && s[5]) && (currentEncL + currentEncR > 300))
-        {   
+        if ((cnt == 0) && (currentEncL + currentEncR > 300))
+        {
             // dora isar ( da5la lel Y2)
             reset_encoders();
             while ((get_encR() < 100) || !(cnt >= 2 && abs(somme - 3.5) <= 3))
@@ -759,11 +759,11 @@ void loop()
             }
             reset_encoders();
             n++;
-            // debut Y2 
+            // debut Y2
         }
         else
         {
-            PID_1.Compute();
+            PID_2.Compute();
         }
     }
 
@@ -772,7 +772,7 @@ void loop()
         if ((cnt == 0) && (currentEncL + currentEncR > 300))
         {
             setMotor(-30, -30);
-            delay(500);
+            delay(200);
             // fel abyadh  mechi le drouj (fin Y2)
             reset_encoders();
             while ((get_encL() < 150))
@@ -780,37 +780,51 @@ void loop()
                 setMotor(90, -30);
                 readSensor();
             }
-           
+
             reset_encoders();
+            bool security = 0;
             while (cnt == 0)
             {
+                if (get_encL() + get_encR() > 452)
+                {
+                    security = 1;
+                    break;
+                }
                 setMotor(90, 90);
                 readSensor();
             }
-            
+            if (security)
+            {
+                reset_encoders();
+                while (cnt == 0)
+                {
+                    setMotor(-30,90);
+                    readSensor();
+                }
+            }
 
             // mas fel 5att drouj
 
             reset_encoders();
-            while (cnt!=0)    
+            while (cnt != 0)
             {
                 setMotor(90, 90);
                 readSensor();
             }
             // // fett e drouj (kolou fe labyath )
-             while (cnt == 0)
+            while (cnt == 0)
             {
                 setMotor(-90, 90);
                 readSensor();
             }
 
-           
             // rja3 le drouj
             PID_2.resetPID();
             reset_encoders();
-            setMotor(-30, -30);
-            delay(500);
-            
+            // REMINDER
+            // setMotor(-30, -30);
+            // delay(500);
+
             n++;
         }
         else
@@ -821,34 +835,37 @@ void loop()
 
     else if (n == 24)
     {
-        while(get_encL()+get_encR()<800){
+        while (get_encL() + get_encR() < 800)
+        {
             readSensor();
-            if(cnt == 0){
+            if (cnt == 0)
+            {
                 setMotor(30, 120);
             }
-            else {
+            else
+            {
                 PID_2.Compute();
             }
         }
         n++;
         reset_encoders();
     }
-    else if (n == 25 ){
-        if ( cnt >=8){
-            setMotor(90,90);
+    else if (n == 25)
+    {
+        if (cnt >= 8)
+        {
+            setMotor(90, 90);
             delay(200);
 
-            setMotor(-30,-30);
+            setMotor(-30, -30);
             delay(500);
             n = 100;
-
-            
-        }else {
+        }
+        else
+        {
             PID_2.Compute();
         }
     }
-
-    
 
     /*__________________________________DEBUGGING_______________________________________________________*/
     if (n == 100)
