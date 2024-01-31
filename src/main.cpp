@@ -111,8 +111,8 @@ public:
 class PID_2_cls
 {
 public:
-    unsigned int lastProcess = 0;
     int error = 0;
+    unsigned int lastProcess = 0;
     int lastError = 0;
     int lastOnLineError = 0;
     int P, D;
@@ -122,13 +122,43 @@ public:
 
     int maxspeed = 140;
     int minspeed = -120;
-
-    void Compute()
+    void resetPID()
+    {
+        error = 0;
+        lastProcess = 0;
+        lastError = 0;
+        lastOnLineError = 0;
+        lastOnLineError = 0;
+        kp = 35;
+        kd = 5;
+        speed = 120;
+        maxspeed = 140;
+        minspeed = -120;
+    }
+    void setPIDMestwi()
+    {
+        error = 0;
+        lastProcess = 0;
+        lastError = 0;
+        lastOnLineError = 0;
+        lastOnLineError = 0;
+        kp = 30;
+        kd = 5;
+        speed = 120;
+        maxspeed = 180;
+        minspeed = -50;
+    }
+    void Compute(int shift = 0)
     {
         double deltaTime = (micros() - lastProcess) / 1000000.0;
         lastProcess = micros();
+        int dataSensorLocal = dataSensor;
+        if (shift != 0)
+        {
+            dataSensorLocal = dataSensorLocal >> shift;
+        }
         // clang-format off
-        switch (dataSensor) {
+        switch (dataSensorLocal) {
             case 0b00011000: error = 0;    break;
 
             case 0b00110000: error = 1;    break;
@@ -147,23 +177,23 @@ public:
         }
         // clang-format on
         // debugSerial->println("--> error: " + String(error));
-        // displaySensor(dataSensor);
+        // displaySensor(dataSensorLocal);
 
         // 0b101100; 0b100100; 0b101111
-        // if ((dataSensor & 0b100000) &&
-        //     (dataSensor & 0b001111))
-        // if ((dataSensor & 0b10000000) &&
-        //     (dataSensor & 0b00011111))
+        // if ((dataSensorLocal & 0b100000) &&
+        //     (dataSensorLocal & 0b001111))
+        // if ((dataSensorLocal & 0b10000000) &&
+        //     (dataSensorLocal & 0b00011111))
         // {
         //     error = lastOnLineError;
         // }
-        if (dataSensor != 0b00000000)
+        if (dataSensorLocal != 0b00000000)
         {
             lastOnLineError = error;
         }
-        if (dataSensor == 0b00000000)
+        if (dataSensorLocal == 0b00000000)
         {
-            error = lastOnLineError ;
+            error = lastOnLineError;
         }
         P = error * (double)kp;
         D = (error - lastError) * (double)kd / deltaTime;
@@ -236,7 +266,7 @@ void setup()
 
 /*______________________________________LOOP___________________________________________________*/
 // int n = -1;
-int n = -1;
+int n = 18;
 // int n = 690;
 void loop()
 {
@@ -380,15 +410,16 @@ void loop()
 
         if (s[4] && s[5] && s[6] && s[7])
         {
-
-            reset_encR();
-            reset_encL();
+            // debut angle droit ymin
+            reset_encoders();
             while ((get_encL() < 255) || !(cnt >= 2 && abs(somme - 3.5) <= 3))
             {
                 setMotor(120, -70);
                 readSensor();
             }
             n++;
+            reset_encoders();
+            PID_2.setPIDMestwi();
             // fin angle droit ymin
         }
         else
@@ -398,15 +429,16 @@ void loop()
     }
     else if (n == 8)
     {
-        if ((s[0] && s[7]) && (currentTime - lastTime > 500))
+        if ((s[0] && s[7]) && currentEncL > 564 && currentEncR > 564) //(currentTime - lastTime > 500))
         {
             // debut partie noir (couleur inverse)
+            PID_2.resetPID();
             lineColor = WHITE_LINE;
             n++;
         }
         else
         {
-            PID_1.Compute();
+            PID_2.Compute();
         }
     }
     else if (n == 9)
@@ -634,15 +666,189 @@ void loop()
     }
     else if (n == 19)
     {
-        if (currentEncL > 2000 && currentEncR > 2000)
+        if ((currentEncR + currentEncL) > (1620 + 70) * 2)
         {
-            n = 100;
+
+            PID_2.speed = 90;
+
+            // if (cnt == 0){
+            //     reset_encoders();
+            //     while ( ((get_encL()+ get_encR()) < 56*2 ) && cnt == 0)
+            //     {
+            //         readSensor();
+            //         PID_2.Compute();
+            //     }
+
+            // }
+            n++;
         }
         else
         {
             PID_2.Compute();
         }
     }
+    else if (n == 20)
+    {
+        if (cnt == 0)
+        {
+
+            setMotor(-30, -30);
+            delay(500);
+            // debut angle droit ymin (fin sinuset)
+            reset_encoders();
+            while ((get_encL() < 100))
+            {
+                setMotor(90, -30);
+                readSensor();
+                if (cnt != 0)
+                {
+                    return;
+                }
+            }
+            setMotor(-30, -30);
+            delay(500);
+            reset_encoders();
+            while (cnt == 0)
+            {
+                setMotor(90, 90);
+                readSensor();
+            }
+            n++;
+            PID_2.resetPID();
+            reset_encoders();
+
+            // fin angle droit ymin (fin sinuset)
+        }
+        else
+        {
+            PID_2.Compute();
+        }
+    }
+    else if (n == 21)
+    {
+        if ((s[7] && (s[4] || s[3])) && (currentEncL + currentEncR > 350))
+        {   
+            // dora imin (fin Y1)
+            reset_encoders();
+            while ((get_encL() < 255) )
+            {
+                setMotor(120, 0);
+                readSensor();
+            }
+
+            reset_encoders();
+            n++;
+            // debut partie mestwiya (entre Y1 et Y2)
+
+        }
+        else
+        {
+            PID_2.Compute();
+        }
+    }
+    else if (n == 22)
+    {
+        if ((s[2] && s[3] && s[4] && s[5]) && (currentEncL + currentEncR > 300))
+        {   
+            // dora isar ( da5la lel Y2)
+            reset_encoders();
+            while ((get_encR() < 100) || !(cnt >= 2 && abs(somme - 3.5) <= 3))
+            {
+                setMotor(-70, 120);
+                readSensor();
+            }
+            reset_encoders();
+            n++;
+            // debut Y2 
+        }
+        else
+        {
+            PID_1.Compute();
+        }
+    }
+
+    else if (n == 23)
+    {
+        if ((cnt == 0) && (currentEncL + currentEncR > 300))
+        {
+            setMotor(-30, -30);
+            delay(500);
+            // fel abyadh  mechi le drouj (fin Y2)
+            reset_encoders();
+            while ((get_encL() < 150))
+            {
+                setMotor(90, -30);
+                readSensor();
+            }
+           
+            reset_encoders();
+            while (cnt == 0)
+            {
+                setMotor(90, 90);
+                readSensor();
+            }
+            
+
+            // mas fel 5att drouj
+
+            reset_encoders();
+            while (cnt!=0)    
+            {
+                setMotor(90, 90);
+                readSensor();
+            }
+            // // fett e drouj (kolou fe labyath )
+             while (cnt == 0)
+            {
+                setMotor(-90, 90);
+                readSensor();
+            }
+
+           
+            // rja3 le drouj
+            PID_2.resetPID();
+            reset_encoders();
+            setMotor(-30, -30);
+            delay(500);
+            
+            n++;
+        }
+        else
+        {
+            PID_2.Compute();
+        }
+    }
+
+    else if (n == 24)
+    {
+        while(get_encL()+get_encR()<800){
+            readSensor();
+            if(cnt == 0){
+                setMotor(30, 120);
+            }
+            else {
+                PID_2.Compute();
+            }
+        }
+        n++;
+        reset_encoders();
+    }
+    else if (n == 25 ){
+        if ( cnt >=8){
+            setMotor(90,90);
+            delay(200);
+
+            setMotor(-30,-30);
+            delay(500);
+            n = 100;
+
+            
+        }else {
+            PID_2.Compute();
+        }
+    }
+
+    
 
     /*__________________________________DEBUGGING_______________________________________________________*/
     if (n == 100)
@@ -711,7 +917,7 @@ void loop()
     // test PID_2
     if (n == 694)
     {
-        PID_2.Compute();
+        PID_2.Compute(2);
     }
     /*______________________________________________________________________________________________*/
 }
