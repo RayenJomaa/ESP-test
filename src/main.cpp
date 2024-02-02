@@ -137,11 +137,14 @@ public:
 
         P = error;
 
-        if (error == 0){
-            if (lastOnLineSomme<3.5){
-                error= -100;
+        if (error == 0)
+        {
+            if (lastOnLineSomme < 3.5)
+            {
+                error = -100;
             }
-            else {
+            else
+            {
                 error = 100;
             }
         }
@@ -351,10 +354,13 @@ public:
                 lastOnLineError = error;
         }
         if (dataSensorLocal == 0b00000000)
-        {   
-            if (lastOnLineSomme<3.5){
+        {
+            if (lastOnLineSomme < 3.5)
+            {
                 error = 6;
-            }else {
+            }
+            else
+            {
                 error = -6;
             }
             // error = constrain(lastOnLineError * 100, -6, 6);
@@ -376,6 +382,60 @@ public:
         setMotor(moveLeft, moveRight);
     }
 };
+class FORWARD_WITH_ENCODERS_cls
+{
+public:
+    unsigned int startEncL = get_encL();
+    unsigned int startEncR = get_encR();
+    unsigned long startMillis = millis();
+    unsigned long lastTimer = 0;
+    int powerL = 120;
+    int powerR = 120;
+    int speed = 120;
+
+    bool initialized = 0;
+    void init()
+    {
+        startEncL = get_encL();
+        startEncR = get_encR();
+        startMillis = millis();
+        lastTimer = 0;
+        initialized = 1;
+    }
+    void reset()
+    {
+        initialized = 0;
+    }
+    void step()
+    {
+        if (!initialized)
+        {
+            init();
+        }
+        const int motor_offset = 1;
+        const int max_offset = 5;
+
+        unsigned long diff_l = get_encL() - startEncL;
+        unsigned long diff_r = get_encR() - startEncR;
+        if (millis() - lastTimer > 0)
+        {
+            lastTimer = millis();
+            if (diff_l > diff_r)
+            {
+                powerL = powerL - motor_offset;
+                powerR = powerR + motor_offset;
+            }
+            if (diff_l < diff_r)
+            {
+                powerL = powerL + motor_offset;
+                powerR = powerR - motor_offset;
+            }
+            powerL = constrain(powerL, speed - max_offset, speed + max_offset);
+            powerR = constrain(powerR, speed - max_offset, speed + max_offset);
+        }
+        setMotor(powerL, powerR);
+    }
+};
 /*______________________________________GLOBALs______________________________________________________*/
 unsigned int lastTime = millis();
 unsigned int lastEncL = 0;
@@ -384,6 +444,7 @@ PID_1_cls PID_1;
 PID_2_cls PID_2;
 PID_3_cls PID_3;
 PID_4_cls PID_4;
+FORWARD_WITH_ENCODERS_cls FORWARD_WITH_ENCODERS;
 
 /*______________________________________SETUPs______________________________________________________*/
 // Setup function to configure pins and attach interrupts
@@ -431,11 +492,21 @@ void setup()
 }
 
 /*______________________________________LOOP___________________________________________________*/
-//int n = -1;
-int n = 12;
+int n = -1;
+// int n = 696;
 // int n = 18;
 //  int n = 690;
 //  int n = 1000;
+void accel(int speed, int ms)
+{
+    unsigned int lt = millis();
+    FORWARD_WITH_ENCODERS.reset();
+    FORWARD_WITH_ENCODERS.speed = speed;
+    while (millis() - lt < ms)
+    {
+        FORWARD_WITH_ENCODERS.step();
+    }
+}
 void loop()
 {
     unsigned int currentTime = millis();
@@ -645,7 +716,7 @@ void loop()
     // d5alna fl zigzag ==> taya7 l vitesse kima kenet
     else if (n == 11)
     {
-        if (s[4] && s[5] && s[6] && s[7]) 
+        if (s[4] && s[5] && s[6] && s[7])
         {
             // debut angle droit avant zigzag
             reset_encoders();
@@ -770,7 +841,7 @@ void loop()
     }
     else if (n == 17)
     {
-        if ( (!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
+        if ((!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
         {
             // Left Encoder: 214 Right Encoder: 200
             //  setMotor(-30, -30);
@@ -781,7 +852,7 @@ void loop()
                 setMotor(120, -120);
                 readSensor();
             }
-            n=100;
+            n++;
             reset_encR();
             reset_encL();
             lastTime = millis();
@@ -1134,6 +1205,17 @@ void loop()
     if (n == 695)
     {
         PID_3.Compute();
+    }
+    if (n == 696)
+    {
+
+        accel(120,200);
+        accel(150,200);
+        accel(150,200);
+
+
+
+        n = 100;
     }
     /*______________________________________________________________________________________________*/
 }
