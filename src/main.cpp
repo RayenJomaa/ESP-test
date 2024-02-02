@@ -45,6 +45,7 @@ void reset_encoders()
 const byte posSensor[SENSOR_COUNT] = {15, 23, 22, 21, 19, 18, 5, 14};
 bool s[8] = {0};
 int dataSensor = 0b00000000;
+float lastOnLineSomme = 0;
 float somme = 0;
 int cnt = 0;
 bool onLine = 0;
@@ -92,6 +93,58 @@ public:
 
         P = error;
 
+        // D = error - lasterror;
+
+        D = (error - lasterror) * (double)kd / deltaTime;
+        lasterror = error;
+        lastProcess = micros();
+
+        int motorspeed = P * kp + D * kd;
+
+        int speedm1 = basespeed - motorspeed;
+        int speedm2 = basespeed + motorspeed;
+
+        speedm1 = constrain(speedm1, minspeed, maxspeed);
+        speedm2 = constrain(speedm2, minspeed, maxspeed);
+        setMotor(speedm2, speedm1);
+    }
+};
+class PID_4_cls
+{
+public:
+    int values[8] = {-100, -50, -25, -10, 10, 25, 50, 100};
+    float kp = 1;
+    float kd = 0.2;
+    int P, D;
+    int lastProcess = 0;
+    int lasterror = 0;
+
+    int basespeed = 120;
+    int maxspeed = 180;
+    int minspeed = -50;
+
+    void Compute()
+    {
+
+        int currenttime = millis();
+        double deltaTime = (micros() - lastProcess) / 1000000.0;
+        int error = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            error += s[i] * values[i];
+        }
+
+        P = error;
+
+        if (error == 0){
+            if (lastOnLineSomme<3.5){
+                error= -100;
+            }
+            else {
+                error = 100;
+            }
+        }
         // D = error - lasterror;
 
         D = (error - lasterror) * (double)kd / deltaTime;
@@ -212,12 +265,125 @@ public:
         setMotor(moveLeft, moveRight);
     }
 };
+class PID_3_cls
+{
+public:
+    int error = 0;
+    unsigned int lastProcess = 0;
+    int lastError = 0;
+    int lastOnLineError = 6;
+    int lastNonZeroError = 0;
+    int P, D;
+    int kp = 28;
+    int kd = 0;
+    int speed = 90;
+
+    int maxspeed = 120;
+    int minspeed = -90;
+
+    void resetPID()
+    {
+        error = 0;
+        lastProcess = 0;
+        lastError = 0;
+        lastOnLineError = 0;
+        kp = 35;
+        kd = 5;
+        speed = 120;
+        maxspeed = 140;
+        minspeed = -120;
+    }
+    void setPIDMestwi()
+    {
+        error = 0;
+        lastProcess = 0;
+        lastError = 0;
+        lastOnLineError = 0;
+        lastOnLineError = 0;
+        kp = 30;
+        kd = 5;
+        speed = 120;
+        maxspeed = 180;
+        minspeed = -50;
+    }
+    void Compute(int shift = 0)
+    {
+        double deltaTime = (micros() - lastProcess) / 1000000.0;
+        lastProcess = micros();
+        int dataSensorLocal = dataSensor;
+        if (shift != 0)
+        {
+            dataSensorLocal = dataSensorLocal >> shift;
+        }
+        // clang-format off
+        switch (dataSensorLocal) {
+            case 0b00011000: error = 0;    break;
+
+            case 0b00110000: error = 1;    break;
+            case 0b00100000: error = 2;    break;
+            case 0b01100000: error = 3;    break;
+            case 0b01000000: error = 4;    break;
+            case 0b11000000: error = 5;    break;
+            case 0b10000000: error = 6;    break;
+
+            case 0b00001100: error = -1;   break;
+            case 0b00000100: error = -2;   break;
+            case 0b00000110: error = -3;   break;
+            case 0b00000010: error = -4;   break;
+            case 0b00000011: error = -5;   break;
+            case 0b00000001: error = -6;   break;
+        }
+        // clang-format on
+        // debugSerial->println("--> error: " + String(error));
+        // displaySensor(dataSensorLocal);
+
+        // 0b101100; 0b100100; 0b101111
+        // if ((dataSensorLocal & 0b100000) &&
+        //     (dataSensorLocal & 0b001111))
+        // if ((dataSensorLocal & 0b10000000) &&
+        //     (dataSensorLocal & 0b00011111))
+        // {
+        //     error = lastOnLineError;
+        // }
+        if (dataSensorLocal != 0b00000000)
+        {
+            if (error != 0)
+                lastOnLineError = error;
+        }
+        if (dataSensorLocal == 0b00000000)
+        {   
+            if (lastOnLineSomme<3.5){
+                error = 6;
+            }else {
+                error = -6;
+            }
+            // error = constrain(lastOnLineError * 100, -6, 6);
+        }
+        P = error * (double)kp;
+        D = (error - lastError) * (double)kd / deltaTime;
+
+        double rateError = error - lastError;
+        lastError = error;
+
+        double mv = P + D;
+        int moveVal = (int)(P + D);
+        int moveLeft = speed - moveVal;
+        int moveRight = speed + moveVal;
+
+        moveLeft = constrain(moveLeft, minspeed, maxspeed);
+        moveRight = constrain(moveRight, minspeed, maxspeed);
+        Serial.println("LL: " + String(moveLeft) + " RR: " + String(moveRight));
+        setMotor(moveLeft, moveRight);
+    }
+};
 /*______________________________________GLOBALs______________________________________________________*/
 unsigned int lastTime = millis();
 unsigned int lastEncL = 0;
 unsigned int lastEncR = 0;
 PID_1_cls PID_1;
 PID_2_cls PID_2;
+PID_3_cls PID_3;
+PID_4_cls PID_4;
 
 /*______________________________________SETUPs______________________________________________________*/
 // Setup function to configure pins and attach interrupts
@@ -265,9 +431,11 @@ void setup()
 }
 
 /*______________________________________LOOP___________________________________________________*/
-int n = -1;
-//int n = 18;
-// int n = 690;
+//int n = -1;
+int n = 12;
+// int n = 18;
+//  int n = 690;
+//  int n = 1000;
 void loop()
 {
     unsigned int currentTime = millis();
@@ -474,9 +642,10 @@ void loop()
             PID_1.Compute();
         }
     }
+    // d5alna fl zigzag ==> taya7 l vitesse kima kenet
     else if (n == 11)
     {
-        if (s[4] && s[5] && s[6] && s[7])
+        if (s[4] && s[5] && s[6] && s[7]) 
         {
             // debut angle droit avant zigzag
             reset_encoders();
@@ -601,7 +770,7 @@ void loop()
     }
     else if (n == 17)
     {
-        if ((!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
+        if ( (!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
         {
             // Left Encoder: 214 Right Encoder: 200
             //  setMotor(-30, -30);
@@ -612,7 +781,7 @@ void loop()
                 setMotor(120, -120);
                 readSensor();
             }
-            n++;
+            n=100;
             reset_encR();
             reset_encL();
             lastTime = millis();
@@ -666,10 +835,10 @@ void loop()
     }
     else if (n == 19)
     {
-        if ((currentEncR + currentEncL) > (1620 + 70) * 2)
+        if ((currentEncR + currentEncL) > (1620 + 70 - 200) * 2)
         {
 
-            PID_2.speed = 90;
+            // PID_2.speed = 90;
 
             // if (cnt == 0){
             //     reset_encoders();
@@ -684,7 +853,8 @@ void loop()
         }
         else
         {
-            PID_2.Compute();
+
+            PID_3.Compute();
         }
     }
     else if (n == 20)
@@ -693,10 +863,10 @@ void loop()
         {
             // REMINDER
             setMotor(-30, -30);
-            delay(200);
+            delay(5);
             // debut angle droit ymin (fin sinuset)
             reset_encoders();
-            while ((get_encL() < 200))
+            while ((get_encL() < 150))
             {
                 setMotor(90, -30);
                 readSensor();
@@ -705,14 +875,36 @@ void loop()
                     return;
                 }
             }
+
             // REMINDER
             // setMotor(-30, -30);
             // delay(500);
+            // reset_encoders();
+            // while (cnt == 0)
+            // {
+            //     setMotor(90, 90);
+            //     readSensor();
+            // }
             reset_encoders();
+            bool security = 0;
             while (cnt == 0)
             {
+                if (get_encL() + get_encR() > 452)
+                {
+                    security = 1;
+                    break;
+                }
                 setMotor(90, 90);
                 readSensor();
+            }
+            if (security)
+            {
+                reset_encoders();
+                while (cnt == 0)
+                {
+                    setMotor(-30, 90);
+                    readSensor();
+                }
             }
             n++;
             PID_2.resetPID();
@@ -748,7 +940,7 @@ void loop()
     }
     else if (n == 22)
     {
-        if ((cnt == 0) && (currentEncL + currentEncR > 300))
+        if ((cnt == 0 || (cnt >= 4 && (s[3] || s[4]))) && (currentEncL + currentEncR > 300))
         {
             // dora isar ( da5la lel Y2)
             reset_encoders();
@@ -772,7 +964,7 @@ void loop()
         if ((cnt == 0) && (currentEncL + currentEncR > 300))
         {
             setMotor(-30, -30);
-            delay(200);
+            delay(5);
             // fel abyadh  mechi le drouj (fin Y2)
             reset_encoders();
             while ((get_encL() < 150))
@@ -798,7 +990,7 @@ void loop()
                 reset_encoders();
                 while (cnt == 0)
                 {
-                    setMotor(-30,90);
+                    setMotor(-30, 90);
                     readSensor();
                 }
             }
@@ -835,18 +1027,20 @@ void loop()
 
     else if (n == 24)
     {
-        while (get_encL() + get_encR() < 800)
+        while (get_encL() + get_encR() < 1600)
         {
             readSensor();
             if (cnt == 0)
             {
-                setMotor(30, 120);
+                setMotor(-50, 90);
             }
             else
             {
-                PID_2.Compute();
+                PID_4.Compute();
             }
         }
+        // setMotor(0, 0);
+        // delay(1000); //////// juste jarebna biha win youfa el 1600
         n++;
         reset_encoders();
     }
@@ -888,10 +1082,10 @@ void loop()
     }
     if (n == 1000)
     {
-        setMotor(0, 0);
-        n++;
+        setMotor(120, 120);
     }
     /*__________________________________TESTs_______________________________________________________*/
+
     // test pid
     if (n == 690)
     {
@@ -934,7 +1128,12 @@ void loop()
     // test PID_2
     if (n == 694)
     {
-        PID_2.Compute(2);
+        PID_2.Compute();
+    }
+    // test PID_2
+    if (n == 695)
+    {
+        PID_3.Compute();
     }
     /*______________________________________________________________________________________________*/
 }
@@ -976,6 +1175,8 @@ void readSensor()
     {
         somme = somme / cnt;
         onLine = 1;
+        if (somme != 3.5)
+            lastOnLineSomme = somme;
     }
 }
 
