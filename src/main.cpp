@@ -243,11 +243,11 @@ public:
         lastError = 0;
         lastOnLineError = 0;
         lastOnLineError = 0;
-        kp = 20;
+        kp = 30;
         kd = 2;
         speed = 120;
-        maxspeed = 140;
-        minspeed = -30;
+        maxspeed = 150;
+        minspeed = -50;
     }
     void Compute(int shift = 0)
     {
@@ -329,7 +329,6 @@ public:
     int maxspeed = 120;
     int minspeed = -90;
 
-    
     void Compute(int shift = 0)
     {
         double deltaTime = (micros() - lastProcess) / 1000000.0;
@@ -566,7 +565,7 @@ void loop()
     }
     else if (n == 2)
     {
-        if ( (currentEncL > 80 && currentEncR > 80))
+        if ((currentEncL > 80 && currentEncR > 80))
         {
             // debut ligne vertical loul
             reset_encoders();
@@ -725,10 +724,10 @@ void loop()
         }
         else
         {
-            int x=226*2*5;
+            int x = 226 * 2 * 5;
             if (get_encL() + get_encR() < x)
             {
-                // CHANGE ME 
+                // CHANGE ME
                 readSensor();
                 PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 120, 255);
                 // PID_5.Compute();
@@ -743,7 +742,7 @@ void loop()
         {
             // debut angle droit avant zigzag
             reset_encoders();
-            while ((get_encL() < 255) || cnt==0)
+            while ((get_encL() < 255) || cnt == 0)
             {
                 readSensor();
                 setMotor(120, -70);
@@ -755,15 +754,15 @@ void loop()
         }
         else
         {
-            int x1=226*2*2;
-            int x2=226*2*2;
-            //acceleration
-            if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2+x1)
+            int x1 = 226 * 2 * 2;
+            int x2 = 226 * 2 * 2;
+            // acceleration
+            if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2 + x1)
             {
                 readSensor();
-                // CHANGE ME 
+                // CHANGE ME
 
-                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 255, 120);
+                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1 + x2, 255, 120);
                 // PID_5.Compute();
             }
             PID_5.Compute();
@@ -865,19 +864,23 @@ void loop()
 
     else if (n == 16)
     {
-        if (s[6] && (get_encL() > 50) && (get_encR() > 50))
+        if ((s[6]) && (get_encL() > 50) && (get_encR() > 50))
         {
             // debut angle aigu zigzag 4 (final)
             reset_encoders();
             n++;
         }
         else
+        {
+
             // arja3li
+            
             PID_3.Compute();
+        }
     }
     else if (n == 17)
     {
-        if ((!s[1] && (!s[5] || !s[2]) && !s[6] && (!s[3]||!s[4])) && (get_encL() > 50) && (get_encR() > 50))
+        if ((!s[1] && (!s[5] || !s[2]) && !s[6] && (!s[3] || !s[4])) && (get_encL() > 50) && (get_encR() > 50))
         {
             // Left Encoder: 214 Right Encoder: 200
             //  setMotor(-30, -30);
@@ -926,29 +929,29 @@ void loop()
             // }
 
             // setMotor(0, 0);
-            PID_1.basespeed  = 120;
+            PID_1.basespeed = 120;
             reset_encoders();
             n++;
         }
         else
         {
-            //Left Encoder: 779 Right Encoder: 785
-            int x_fin_accel = (779+785)/3;
-            int x_fin_vitesse_const=(779+785)*2/3;
-            int x_fin_decel= (779+785);
+            // Left Encoder: 779 Right Encoder: 785
+            int x_fin_accel = (779 + 785) / 3;
+            int x_fin_vitesse_const = (779 + 785) * 2 / 3;
+            int x_fin_decel = (779 + 785);
             // //acceleration
             // if (get_encL() + get_encR()  < x_fin_accel)
-            // {   
+            // {
             //     readSensor();
             //     PID_1.basespeed = map(get_encL() + get_encR(), 0, x_fin_accel, 120, 180);
             // }
-            //deceleration
+            // deceleration
             if (get_encL() + get_encR() > x_fin_vitesse_const && get_encL() + get_encR() < x_fin_decel)
             {
                 readSensor();
                 PID_1.basespeed = map(get_encL() + get_encR(), x_fin_vitesse_const, x_fin_decel, 120, 90);
             }
-            
+
             if (currentTime - lastTime < 200)
             {
 
