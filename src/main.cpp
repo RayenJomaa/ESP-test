@@ -722,7 +722,7 @@ void loop()
         {
             // ligne blanc horizontal ( pause 5 seconde ici)
             setMotor(-30, -30);
-            delay(500); // TODO: change this pause to 5 seconds
+            delay(4800); // TODO: change this pause to 5 seconds
             reset_encL();
             reset_encR();
             while ((get_encR() < 56) && (get_encL() < 56))
@@ -752,8 +752,9 @@ void loop()
             int x=226*2*5;
             if (get_encL() + get_encR() < x)
             {
+                // CHANGE ME 
                 readSensor();
-                PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 125, 255);
+                PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 120, 120);
                 // PID_5.Compute();
             }
             PID_5.Compute();
@@ -784,7 +785,9 @@ void loop()
             if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2+x1)
             {
                 readSensor();
-                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 255, 120);
+                // CHANGE ME 
+
+                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 120, 120);
                 // PID_5.Compute();
             }
             PID_5.Compute();
@@ -947,6 +950,7 @@ void loop()
             // }
 
             // setMotor(0, 0);
+            PID_1.basespeed  = 120;
             reset_encoders();
             n++;
         }
@@ -956,17 +960,17 @@ void loop()
             int x_fin_accel = (779+785)/3;
             int x_fin_vitesse_const=(779+785)*2/3;
             int x_fin_decel= (779+785);
-            //acceleration
-            if (get_encL() + get_encR()  < x_fin_accel)
-            {   
-                readSensor();
-                PID_1.basespeed = map(get_encL() + get_encR(), 0, x_fin_accel, 120, 180);
-            }
+            // //acceleration
+            // if (get_encL() + get_encR()  < x_fin_accel)
+            // {   
+            //     readSensor();
+            //     PID_1.basespeed = map(get_encL() + get_encR(), 0, x_fin_accel, 120, 180);
+            // }
             //deceleration
             if (get_encL() + get_encR() > x_fin_vitesse_const && get_encL() + get_encR() < x_fin_decel)
             {
                 readSensor();
-                PID_1.basespeed = map(get_encL() + get_encR(), x_fin_vitesse_const, x_fin_decel, 180, 90);
+                PID_1.basespeed = map(get_encL() + get_encR(), x_fin_vitesse_const, x_fin_decel, 120, 90);
             }
             
             if (currentTime - lastTime < 200)
