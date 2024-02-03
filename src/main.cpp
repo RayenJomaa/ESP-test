@@ -561,12 +561,12 @@ void loop()
         }
         else
         {
-            setMotor(-80, 120);
+            setMotor(-100, 120);
         }
     }
     else if (n == 2)
     {
-        if ((s[7] || s[6] ) && (currentEncL > 80 && currentEncR > 80))
+        if ( (currentEncL > 80 && currentEncR > 80))
         {
             // debut ligne vertical loul
             reset_encoders();
