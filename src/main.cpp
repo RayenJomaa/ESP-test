@@ -109,6 +109,51 @@ public:
         setMotor(speedm2, speedm1);
     }
 };
+class PID_5_cls
+{
+public:
+    int values[8] = {-100, -50, -25, -10, 10, 25, 50, 100};
+    float kp = 1;
+    float kd = 0;
+    int P, D;
+    int lastProcess = 0;
+    int lasterror = 0;
+
+    int basespeed = 180;
+    int maxspeed = 255;
+    int minspeed = 0;
+
+    int DistanceAcc = 500;
+
+    void Compute()
+    {
+        int currenttime = millis();
+        double deltaTime = (micros() - lastProcess) / 1000000.0;
+        int error = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            error += s[i] * values[i];
+        }
+
+        P = error;
+
+        // D = error - lasterror;
+
+        D = (error - lasterror) * (double)kd / deltaTime;
+        lasterror = error;
+        lastProcess = micros();
+
+        int motorspeed = P * kp + D * kd;
+
+        int speedm1 = basespeed - motorspeed;
+        int speedm2 = basespeed + motorspeed;
+
+        speedm1 = constrain(speedm1, minspeed, maxspeed);
+        speedm2 = constrain(speedm2, minspeed, maxspeed);
+        setMotor(speedm2, speedm1);
+    }
+};
 class PID_4_cls
 {
 public:
@@ -444,6 +489,7 @@ PID_1_cls PID_1;
 PID_2_cls PID_2;
 PID_3_cls PID_3;
 PID_4_cls PID_4;
+PID_5_cls PID_5;
 FORWARD_WITH_ENCODERS_cls FORWARD_WITH_ENCODERS;
 
 /*______________________________________SETUPs______________________________________________________*/
@@ -493,20 +539,10 @@ void setup()
 
 /*______________________________________LOOP___________________________________________________*/
 int n = -1;
-// int n = 696;
 // int n = 18;
-//  int n = 690;
+// int n = 696;
 //  int n = 1000;
-void accel(int speed, int ms)
-{
-    unsigned int lt = millis();
-    FORWARD_WITH_ENCODERS.reset();
-    FORWARD_WITH_ENCODERS.speed = speed;
-    while (millis() - lt < ms)
-    {
-        FORWARD_WITH_ENCODERS.step();
-    }
-}
+
 void loop()
 {
     unsigned int currentTime = millis();
@@ -693,10 +729,12 @@ void loop()
             {
                 setMotor(120, 120);
             }
+            reset_encoders();
             n++;
         }
         else
         {
+
             PID_1.Compute();
         }
     }
@@ -706,11 +744,19 @@ void loop()
         {
             // fin partie noir (couleur inverse)
             lineColor = BLACK_LINE;
+            reset_encoders();
             n++;
         }
         else
         {
-            PID_1.Compute();
+            int x=226*2*5;
+            if (get_encL() + get_encR() < x)
+            {
+                readSensor();
+                PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 125, 255);
+                // PID_5.Compute();
+            }
+            PID_5.Compute();
         }
     }
     // d5alna fl zigzag ==> taya7 l vitesse kima kenet
@@ -720,8 +766,9 @@ void loop()
         {
             // debut angle droit avant zigzag
             reset_encoders();
-            while ((get_encL() < 255))
+            while ((get_encL() < 255) || cnt==0)
             {
+                readSensor();
                 setMotor(120, -70);
             }
             n++;
@@ -731,7 +778,16 @@ void loop()
         }
         else
         {
-            PID_1.Compute();
+            int x1=226*2*2;
+            int x2=226*2*2;
+
+            if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2+x1)
+            {
+                readSensor();
+                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 255, 120);
+                // PID_5.Compute();
+            }
+            PID_5.Compute();
         }
     }
     else if (n == 12)
@@ -837,7 +893,8 @@ void loop()
             n++;
         }
         else
-            PID_1.Compute();
+            // arja3li
+            PID_3.Compute();
     }
     else if (n == 17)
     {
@@ -872,6 +929,7 @@ void loop()
         if (s[4] && s[5] && s[6] && s[7] && (currentEncL > 100 && currentEncR > 100))
         {
             // debut tour droite entree sinuset
+            PID_1.basespeed = 120;
             reset_encR();
             reset_encL();
             while ((get_encL() < 292))
@@ -894,6 +952,23 @@ void loop()
         }
         else
         {
+            //Left Encoder: 779 Right Encoder: 785
+            int x_fin_accel = (779+785)/3;
+            int x_fin_vitesse_const=(779+785)*2/3;
+            int x_fin_decel= (779+785);
+            //acceleration
+            if (get_encL() + get_encR()  < x_fin_accel)
+            {   
+                readSensor();
+                PID_1.basespeed = map(get_encL() + get_encR(), 0, x_fin_accel, 120, 180);
+            }
+            //deceleration
+            if (get_encL() + get_encR() > x_fin_vitesse_const && get_encL() + get_encR() < x_fin_decel)
+            {
+                readSensor();
+                PID_1.basespeed = map(get_encL() + get_encR(), x_fin_vitesse_const, x_fin_decel, 180, 90);
+            }
+            
             if (currentTime - lastTime < 200)
             {
 
@@ -999,7 +1074,6 @@ void loop()
                 setMotor(120, 0);
                 readSensor();
             }
-
             reset_encoders();
             n++;
             // debut partie mestwiya (entre Y1 et Y2)
@@ -1208,15 +1282,25 @@ void loop()
     }
     if (n == 696)
     {
-
-        accel(120,200);
-        accel(150,200);
-        accel(150,200);
-
-
-
+        PID_5.basespeed = 120;
+        int x = 226 * 2 * 5;
+        reset_encoders();
+        while (get_encL() + get_encR() < x)
+        {
+            readSensor();
+            PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 125, 255);
+            PID_5.Compute();
+        }
+        reset_encoders();
+        while (get_encL() + get_encR() < x)
+        {
+            readSensor();
+            PID_5.basespeed = map((get_encL() + get_encR()), 0, x, 255, 120);
+            PID_5.Compute();
+        }
         n = 100;
     }
+
     /*______________________________________________________________________________________________*/
 }
 
