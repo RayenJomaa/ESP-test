@@ -901,7 +901,7 @@ void loop()
     }
     else if (n == 17)
     {
-        if ((!s[1] && (!s[5] || !s[2]) && !s[6]) && (get_encL() > 50) && (get_encR() > 50))
+        if ((!s[1] && (!s[5] || !s[2]) && !s[6] && (!s[3]||!s[4])) && (get_encL() > 50) && (get_encR() > 50))
         {
             // Left Encoder: 214 Right Encoder: 200
             //  setMotor(-30, -30);
@@ -1012,8 +1012,8 @@ void loop()
         if (cnt == 0)
         {
             // REMINDER
-            setMotor(-30, -30);
-            delay(5);
+            // setMotor(-30, -30);
+            // delay(5);
             // debut angle droit ymin (fin sinuset)
             reset_encoders();
             while ((get_encL() < 150))
