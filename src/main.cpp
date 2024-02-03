@@ -590,7 +590,7 @@ void loop()
     }
     else if (n == 2)
     {
-        if ((s[7] || s[6]) && (currentEncL > 80 && currentEncR > 80))
+        if ((s[7] || s[6] || s[5]) && (currentEncL > 80 && currentEncR > 80))
         {
             // debut ligne vertical loul
             reset_encoders();
@@ -605,7 +605,7 @@ void loop()
     else if (n == 3)
     {
         // Left Encoder: 885 Right Encoder: 925
-        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4) && (s[0] || s[1]))
+        if ((currentEncL > 226 * 3 / 4) && (currentEncR > 226 * 3 / 4) && (s[0] || s[1]||s[2]))
         {
             // debut ligne vertical theni
             reset_encL();
