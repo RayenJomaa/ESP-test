@@ -754,7 +754,7 @@ void loop()
             {
                 // CHANGE ME 
                 readSensor();
-                PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 120, 120);
+                PID_5.basespeed = map(get_encL() + get_encR(), 0, x, 120, 255);
                 // PID_5.Compute();
             }
             PID_5.Compute();
@@ -781,13 +781,13 @@ void loop()
         {
             int x1=226*2*2;
             int x2=226*2*2;
-
+            //acceleration
             if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2+x1)
             {
                 readSensor();
                 // CHANGE ME 
 
-                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 120, 120);
+                PID_5.basespeed = map(get_encL() + get_encR(), x1, x1+x2, 255, 120);
                 // PID_5.Compute();
             }
             PID_5.Compute();
