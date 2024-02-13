@@ -726,7 +726,7 @@ void loop()
         }
         else
         {
-            int x=226*2*2;
+            int x=226*2*5;
             if (get_encL() + get_encR() < x)
             {
                 // CHANGE ME 
@@ -756,7 +756,7 @@ void loop()
         }
         else
         {
-            int x1=226*2*3;
+            int x1=226*2*2;
             int x2=226*2*2;
             //acceleration
             if (get_encL() + get_encR() > x1 && get_encL() + get_encR() < x2+x1)
